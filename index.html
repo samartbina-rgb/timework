@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="บันทึกเวลา">
+<meta name="format-detection" content="telephone=no">
+<meta name="theme-color" content="#07090f">
+<meta name="description" content="บันทึกเวลาทำงานและคำนวณค่าจ้าง OT">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>บันทึกเวลาทำงาน</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+  :root {
+    --bg:#07090f; --surface:#0f1220; --card:#141826; --border:#222840;
+    --accent:#6aa3ff; --accent2:#ffb366; --accent3:#3ddea0;
+    --danger:#ff6b6b; --text:#f0f4ff; --muted:#8f9abf;
+    --mono:'IBM Plex Mono',monospace; --sans:'Sarabun',sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;min-height:100vh;
+    -webkit-text-size-adjust:100%;padding-bottom:env(safe-area-inset-bottom);}
+
+  header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 14px;
+    display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;
+    -webkit-justify-content:space-between;justify-content:space-between;
+    height:48px;position:sticky;top:0;z-index:100;
+    padding-top:env(safe-area-inset-top);}
+  .logo{font-size:15px;font-weight:700;} .logo span{color:var(--accent);}
+
+  .container{max-width:1100px;margin:0 auto;padding:14px 10px;}
+
+  /* ── SETTINGS ── */
+  .settings-bar{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:14px;}
+  .srow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+  .srow3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;}
+  .sg{display:flex;flex-direction:column;gap:3px;}
+  .sg label{font-size:9px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+  .sg input,.sg select{background:var(--surface);border:1px solid var(--border);color:var(--text);
+    border-radius:6px;padding:5px 8px;font-family:var(--mono);font-size:12px;outline:none;width:100%;
+    -webkit-appearance:none;appearance:none;}
+  .sg input:focus,.sg select:focus{border-color:var(--accent);}
+  .sdivider{border-top:1px solid var(--border);margin:8px 0;}
+  .section-label{font-size:9px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;}
+
+  /* day-off toggles */
+  .dayoff-row{display:flex;gap:6px;flex-wrap:wrap;}
+  .dayoff-btn{padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface);
+    color:var(--muted);font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;user-select:none;}
+  .dayoff-btn.off{background:rgba(247,95,95,.15);border-color:var(--danger);color:var(--danger);}
+  .dayoff-btn:hover{border-color:var(--accent);color:var(--accent);}
+
+  .sactions{display:flex;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);}
+  .btn{flex:1;padding:8px 0;border-radius:7px;border:1px solid var(--border);cursor:pointer;
+    font-family:var(--sans);font-size:13px;font-weight:600;background:var(--surface);color:var(--text);transition:all .15s;}
+  .btn:hover{border-color:var(--accent);color:var(--accent);}
+  .btn-danger{color:var(--danger);} .btn-danger:hover{border-color:var(--danger);color:var(--danger);}
+  .btn-export{border-color:var(--accent3);color:var(--accent3);}
+  .btn-export:hover{background:rgba(61,222,160,.15);}
+  .btn-import{border-color:var(--accent2);color:var(--accent2);}
+  .btn-import:hover{background:rgba(255,179,102,.15);}
+
+  /* ── TABS ── */
+  .month-tabs{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;}
+  .year-row{display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
+  .year-btn{padding:5px 14px;border-radius:7px;border:1px solid var(--border);background:var(--surface);
+    color:var(--muted);cursor:pointer;font-size:12px;font-weight:700;transition:all .15s;}
+  .year-btn:hover{border-color:var(--accent);color:var(--accent);}
+  .year-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .month-row{display:flex;gap:4px;flex-wrap:wrap;padding-left:4px;}
+  .month-tab{padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface);
+    color:var(--muted);cursor:pointer;font-size:11px;font-weight:600;transition:all .15s;}
+  .month-tab:hover{border-color:var(--accent);color:var(--accent);}
+  .month-tab.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+
+  /* ── SUMMARY ── */
+  .summary-grid{display:-webkit-grid;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
+  .summary-card{background:var(--card);border:1px solid var(--border);border-radius:9px;padding:14px 12px 12px;}
+  .summary-card .label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;font-weight:600;}
+  .summary-card .value{font-family:var(--mono);font-size:20px;font-weight:700;}
+  .v-blue{color:var(--accent);} .v-orange{color:var(--accent2);} .v-red{color:var(--danger);} .v-green{color:var(--accent3);}
+  .summary-card.wide{grid-column:span 2;}
+
+  /* ── TABLE ── */
+  .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;width:100%;}
+  .table-wrapper{background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;min-width:620px;}
+  .week-block{border-bottom:2px solid var(--border);}
+  .week-block:last-child{border-bottom:none;}
+  table{width:100%;border-collapse:collapse;}
+  thead th{background:var(--surface);padding:7px 4px;text-align:center;font-size:9px;font-weight:700;
+    color:var(--muted);text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);white-space:nowrap;}
+  tbody tr{border-bottom:1px solid rgba(42,48,69,.5);}
+  tbody tr:hover{background:rgba(79,142,247,.04);}
+  tbody tr.weekend{background:rgba(42,48,69,.3);}
+  tbody tr.dayoff-row-tr{opacity:.35;}
+  td{padding:5px 4px;text-align:center;vertical-align:middle;font-size:11px;white-space:nowrap;}
+
+  .day-cell{display:flex;align-items:center;gap:4px;padding-left:6px;}
+  .day-abbr{font-size:10px;font-weight:700;width:22px;}
+  .day-num{font-family:var(--mono);font-size:11px;color:var(--muted);}
+  .dc-sun .day-abbr,.dc-sun .day-num{color:var(--danger);}
+  .dc-fri .day-abbr{color:#b4a7ff;}
+  .dc-sat .day-abbr,.dc-sat .day-num{color:var(--accent2);}
+
+  .time-input{background:var(--surface);border:1px solid var(--border);color:var(--text);
+    border-radius:5px;padding:4px 3px;font-family:var(--mono);font-size:11px;width:72px;text-align:center;outline:none;
+    -webkit-appearance:none;appearance:none;}
+  .time-input:focus{border-color:var(--accent);}
+  .time-input.filled{border-color:rgba(79,142,247,.55);}
+  .time-input:disabled{opacity:.25;cursor:not-allowed;}
+
+  /* day-off toggle cell */
+  .off-btn{background:none;border:1px solid var(--border);border-radius:4px;color:var(--muted);
+    font-size:10px;cursor:pointer;padding:3px 5px;transition:all .15s;line-height:1;}
+  .off-btn.is-off{background:rgba(247,95,95,.15);border-color:var(--danger);color:var(--danger);}
+  .off-btn.is-working{background:rgba(79,207,142,.15);border-color:var(--accent3);color:var(--accent3);}
+
+  .computed{font-family:var(--mono);font-size:11px;color:var(--muted);}
+  .computed.has-value{color:var(--text);}
+  .c-ot125{color:var(--accent2);}
+  .c-ot15{color:var(--danger);}
+  .c-money{color:var(--accent3);font-weight:700;}
+
+  tr.week-summary td{background:rgba(79,142,247,.10);font-size:13px;font-weight:800;
+    color:#a0b4d0;padding:8px 4px;border-top:2px solid rgba(79,142,247,.3);}
+  .ws-val{font-family:var(--mono);color:#ffe97a;font-size:14px;font-weight:800;}
+  .ws-ot125{font-family:var(--mono);color:#ffc266;font-size:14px;font-weight:800;}
+  .ws-ot15{font-family:var(--mono);color:#ff8888;font-size:14px;font-weight:800;}
+  .ws-money{font-family:var(--mono);color:#7fffc4;font-size:15px;font-weight:800;}
+
+  .month-total{background:var(--surface);border-top:2px solid var(--accent);
+    display:flex;justify-content:space-around;align-items:center;padding:10px 8px;flex-wrap:wrap;gap:8px;}
+  .mt-item{text-align:center;}
+  .mt-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px;}
+  .mt-value{font-family:var(--mono);font-size:13px;font-weight:700;}
+  .mt-normal{color:var(--text);} .mt-ot125{color:var(--accent2);} .mt-ot15{color:var(--danger);} .mt-money{color:var(--accent3);font-size:15px;}
+  /* ── FLOATING SAVE ── */
+  .float-save{
+    position:fixed;
+    bottom:calc(24px + env(safe-area-inset-bottom));
+    left:50%;
+    -webkit-transform:translateX(-50%) translateY(80px);
+    transform:translateX(-50%) translateY(80px);
+    background:var(--accent);color:#fff;border:none;border-radius:50px;
+    padding:13px 64px;font-size:15px;font-weight:700;font-family:Sarabun,sans-serif;
+    cursor:pointer;z-index:999;box-shadow:0 4px 20px rgba(79,142,247,.5);
+    -webkit-transition:-webkit-transform .3s cubic-bezier(.34,1.56,.64,1), opacity .3s;
+    transition:transform .3s cubic-bezier(.34,1.56,.64,1), opacity .3s;
+    opacity:0;pointer-events:none;white-space:nowrap;
+    -webkit-appearance:none;appearance:none;
+  }
+  .float-save.show{
+    -webkit-transform:translateX(-50%) translateY(0);
+    transform:translateX(-50%) translateY(0);
+    opacity:1;pointer-events:auto;
+  }
+  .float-save:active{
+    -webkit-transform:translateX(-50%) translateY(2px);
+    transform:translateX(-50%) translateY(2px);
+  }
+</style>
+</head>
+<body>
+<button class="float-save" id="floatSave" onclick="saveData()">💾 บันทึก</button>
+
+<header>
+  <div class="logo">⏱ บันทึก<span>เวลา</span>ทำงาน</div>
+  <div style="font-size:11px;color:var(--muted)" id="headerYear">₪ พ.ศ.2569</div>
+</header>
+
+<div class="container">
+
+  <!-- SETTINGS -->
+  <div class="settings-bar">
+    <div style="display:-webkit-grid;display:grid;grid-template-columns:1fr 1px 1fr 1px 1fr;gap:0;-webkit-align-items:start;align-items:start;overflow-x:auto;-webkit-overflow-scrolling:touch;min-width:280px;">
+
+      <!-- คอลัมน์ 1: อัตราค่าจ้าง -->
+      <div style="padding-right:12px;">
+        <div class="section-label">💰 อัตราค่าจ้าง (₪/ชม.)</div>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <div class="sg"><input type="number" id="rateNormal" value="35.4" min="0" step="0.5" onchange="recalcAll()"></div>
+          <div class="sg"><label>OT 1.25x</label><input type="number" id="rateOT125" value="44.2" min="0" step="0.5" onchange="recalcAll()"></div>
+          <div class="sg"><label>OT 1.5x</label><input type="number" id="rateOT15" value="53.1" min="0" step="0.5" onchange="recalcAll()"></div>
+        </div>
+      </div>
+
+      <!-- เส้นแบ่ง 1 -->
+      <div style="background:var(--border);width:1px;align-self:stretch;margin:0 2px;"></div>
+
+      <!-- คอลัมน์ 2: เกณฑ์ OT วันปกติ -->
+      <div style="padding:0 12px;">
+        <div class="section-label">📅 เกณฑ์ OT วันปกติ</div>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <div class="sg"><input type="number" id="normCapWD" value="8" min="1" max="24" step=".5" onchange="recalcAll()"></div>
+          <div class="sg"><label>OT1.25 สูงสุด (ชม.)</label><input type="number" id="ot125CapWD" value="10" min="1" max="24" step=".5" onchange="recalcAll()"></div>
+          <div style="font-size:9px;color:var(--muted);padding-top:4px;">OT1.5 หลัง <span id="ot15StartWD" style="color:var(--danger)">10</span> ชม.</div>
+        </div>
+      </div>
+
+      <!-- เส้นแบ่ง 2 -->
+      <div style="background:var(--border);width:1px;align-self:stretch;margin:0 2px;"></div>
+
+      <!-- คอลัมน์ 3: เกณฑ์ OT วันศุกร์ -->
+      <div style="padding-left:12px;">
+        <div class="section-label">✡️ เกณฑ์ OT — วันศุกร์</div>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <div class="sg"><input type="number" id="normCapFri" value="2" min="1" max="24" step=".5" onchange="recalcAll()"></div>
+          <div class="sg"><label>OT1.25 สูงสุด (ชม.)</label><input type="number" id="ot125CapFri" value="2" min="1" max="24" step=".5" onchange="recalcAll()"></div>
+          <div style="font-size:9px;color:var(--muted);padding-top:4px;">OT1.5 หลัง <span id="ot15StartFri" style="color:var(--danger)">2</span> ชม.</div>
+          <label style="display:flex;align-items:center;gap:5px;margin-top:4px;cursor:pointer;font-size:10px;color:var(--muted);">
+            <input type="checkbox" id="friNoBreak" checked onchange="recalcAll()" style="accent-color:var(--accent);cursor:pointer;">
+            ไม่หักพักวันศุกร์
+          </label>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="sactions">
+      <button class="btn" onclick="saveData()">💾 บันทึก</button>
+      <button class="btn btn-export" onclick="exportData()">📤 Export</button>
+      <button class="btn btn-import" onclick="document.getElementById('importFile').click()">📥 Import</button>
+      <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+      <button class="btn btn-danger" onclick="clearAll()">🗑 ล้าง</button>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="month-tabs" id="monthTabs"></div>
+
+  <!-- SUMMARY -->
+  <div class="summary-grid">
+    <div class="summary-card"><div class="label">ปกติ</div><div class="value v-blue" id="sumNormal">0:00</div></div>
+    <div class="summary-card"><div class="label">OT 1.25x</div><div class="value v-orange" id="sumOT125">0:00</div></div>
+    <div class="summary-card"><div class="label">OT 1.5x</div><div class="value v-red" id="sumOT15">0:00</div></div>
+    <div class="summary-card wide"><div class="label">💰 รวมเงินเดือนนี้</div><div class="value v-green" id="sumMoney">₪0.00</div></div>
+    <div class="summary-card"><div class="label">วันทำงาน</div><div class="value v-blue" id="sumDays">0 วัน</div></div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="table-scroll">
+    <div id="tableArea"></div>
+  </div>
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────
+const MONTHS = [
+  // ── 2026 ──
+  {name:'มิ.ย.',m:6, year:2026,days:30,startDay:1}, // 1 มิ.ย. = จ.
+  {name:'ก.ค.', m:7, year:2026,days:31,startDay:3}, // 1 ก.ค. = พ.
+  {name:'ส.ค.', m:8, year:2026,days:31,startDay:6}, // 1 ส.ค. = ส.
+  {name:'ก.ย.', m:9, year:2026,days:30,startDay:2}, // 1 ก.ย. = อ.
+  {name:'ต.ค.', m:10,year:2026,days:31,startDay:4}, // 1 ต.ค. = พฤ.
+  {name:'พ.ย.', m:11,year:2026,days:30,startDay:0}, // 1 พ.ย. = อา
+  {name:'ธ.ค.', m:12,year:2026,days:31,startDay:2}, // 1 ธ.ค. = อ.
+  // ── 2027 ──
+  {name:'ม.ค.', m:1, year:2027,days:31,startDay:5}, // 1 ม.ค. = ศ.
+  {name:'ก.พ.', m:2, year:2027,days:28,startDay:1}, // 1 ก.พ. = จ.
+  {name:'มี.ค.',m:3, year:2027,days:31,startDay:1}, // 1 มี.ค. = จ.
+  {name:'เม.ย.',m:4, year:2027,days:30,startDay:4}, // 1 เม.ย. = พฤ.
+  {name:'พ.ค.', m:5, year:2027,days:31,startDay:6}, // 1 พ.ค. = ส.
+  {name:'มิ.ย.',m:6, year:2027,days:30,startDay:2}, // 1 มิ.ย. = อ.
+  {name:'ก.ค.', m:7, year:2027,days:31,startDay:4}, // 1 ก.ค. = พฤ.
+  {name:'ส.ค.', m:8, year:2027,days:31,startDay:0}, // 1 ส.ค. = อา
+  {name:'ก.ย.', m:9, year:2027,days:30,startDay:3}, // 1 ก.ย. = พ.
+  {name:'ต.ค.', m:10,year:2027,days:31,startDay:5}, // 1 ต.ค. = ศ.
+  {name:'พ.ย.', m:11,year:2027,days:30,startDay:1}, // 1 พ.ย. = จ.
+  {name:'ธ.ค.', m:12,year:2027,days:31,startDay:3}, // 1 ธ.ค. = พ.
+  // ── 2028 ──
+  {name:'ม.ค.', m:1, year:2028,days:31,startDay:6}, // 1 ม.ค. = ส.
+  {name:'ก.พ.', m:2, year:2028,days:29,startDay:2}, // 1 ก.พ. = อ. (ปีอธิกสุรทิน)
+  {name:'มี.ค.',m:3, year:2028,days:31,startDay:3}, // 1 มี.ค. = พ.
+  {name:'เม.ย.',m:4, year:2028,days:30,startDay:6}, // 1 เม.ย. = ส.
+  {name:'พ.ค.', m:5, year:2028,days:31,startDay:1}, // 1 พ.ค. = จ.
+  {name:'มิ.ย.',m:6, year:2028,days:30,startDay:4}, // 1 มิ.ย. = พฤ.
+  {name:'ก.ค.', m:7, year:2028,days:31,startDay:6}, // 1 ก.ค. = ส.
+  {name:'ส.ค.', m:8, year:2028,days:31,startDay:2}, // 1 ส.ค. = อ.
+  {name:'ก.ย.', m:9, year:2028,days:30,startDay:5}, // 1 ก.ย. = ศ.
+  {name:'ต.ค.', m:10,year:2028,days:31,startDay:0}, // 1 ต.ค. = อา
+  {name:'พ.ย.', m:11,year:2028,days:30,startDay:3}, // 1 พ.ย. = พ.
+  {name:'ธ.ค.', m:12,year:2028,days:31,startDay:5}, // 1 ธ.ค. = ศ.
+  // ── 2029 ──
+  {name:'ม.ค.', m:1, year:2029,days:31,startDay:1}, // 1 ม.ค. = จ.
+  {name:'ก.พ.', m:2, year:2029,days:28,startDay:4}, // 1 ก.พ. = พฤ.
+  {name:'มี.ค.',m:3, year:2029,days:31,startDay:4}, // 1 มี.ค. = พฤ.
+  {name:'เม.ย.',m:4, year:2029,days:30,startDay:0}, // 1 เม.ย. = อา
+  {name:'พ.ค.', m:5, year:2029,days:31,startDay:2}, // 1 พ.ค. = อ.
+  {name:'มิ.ย.',m:6, year:2029,days:30,startDay:5}, // 1 มิ.ย. = ศ.
+  {name:'ก.ค.', m:7, year:2029,days:31,startDay:0}, // 1 ก.ค. = อา
+  {name:'ส.ค.', m:8, year:2029,days:31,startDay:3}, // 1 ส.ค. = พ.
+  {name:'ก.ย.', m:9, year:2029,days:30,startDay:6}, // 1 ก.ย. = ส.
+  {name:'ต.ค.', m:10,year:2029,days:31,startDay:1}, // 1 ต.ค. = จ.
+  {name:'พ.ย.', m:11,year:2029,days:30,startDay:4}, // 1 พ.ย. = พฤ.
+  {name:'ธ.ค.', m:12,year:2029,days:31,startDay:6}, // 1 ธ.ค. = ส.
+  // ── 2030 ──
+  {name:'ม.ค.', m:1, year:2030,days:31,startDay:2}, // 1 ม.ค. = อ.
+  {name:'ก.พ.', m:2, year:2030,days:28,startDay:5}, // 1 ก.พ. = ศ.
+  {name:'มี.ค.',m:3, year:2030,days:31,startDay:5}, // 1 มี.ค. = ศ.
+  {name:'เม.ย.',m:4, year:2030,days:30,startDay:1}, // 1 เม.ย. = จ.
+  {name:'พ.ค.', m:5, year:2030,days:31,startDay:3}, // 1 พ.ค. = พ.
+  {name:'มิ.ย.',m:6, year:2030,days:30,startDay:6}, // 1 มิ.ย. = ส.
+  {name:'ก.ค.', m:7, year:2030,days:31,startDay:1}, // 1 ก.ค. = จ.
+  {name:'ส.ค.', m:8, year:2030,days:31,startDay:4}, // 1 ส.ค. = พฤ.
+  {name:'ก.ย.', m:9, year:2030,days:30,startDay:0}, // 1 ก.ย. = อา
+  {name:'ต.ค.', m:10,year:2030,days:31,startDay:2}, // 1 ต.ค. = อ.
+  {name:'พ.ย.', m:11,year:2030,days:30,startDay:5}, // 1 พ.ย. = ศ.
+  {name:'ธ.ค.', m:12,year:2030,days:31,startDay:0}, // 1 ธ.ค. = อา
+  // ── 2031 ──
+  {name:'ม.ค.', m:1, year:2031,days:31,startDay:3}, // 1 ม.ค. = พ.
+  {name:'ก.พ.', m:2, year:2031,days:28,startDay:6}, // 1 ก.พ. = ส.
+  {name:'มี.ค.',m:3, year:2031,days:31,startDay:6}, // 1 มี.ค. = ส.
+  {name:'เม.ย.',m:4, year:2031,days:30,startDay:2}, // 1 เม.ย. = อ.
+  {name:'พ.ค.', m:5, year:2031,days:31,startDay:4}, // 1 พ.ค. = พฤ.
+  {name:'มิ.ย.',m:6, year:2031,days:30,startDay:0}, // 1 มิ.ย. = อา
+  {name:'ก.ค.', m:7, year:2031,days:31,startDay:2}, // 1 ก.ค. = อ.
+  {name:'ส.ค.', m:8, year:2031,days:31,startDay:5}, // 1 ส.ค. = ศ.
+  {name:'ก.ย.', m:9, year:2031,days:30,startDay:1}, // 1 ก.ย. = จ.
+  {name:'ต.ค.', m:10,year:2031,days:31,startDay:3}, // 1 ต.ค. = พ.
+  {name:'พ.ย.', m:11,year:2031,days:30,startDay:6}, // 1 พ.ย. = ส.
+  {name:'ธ.ค.', m:12,year:2031,days:31,startDay:1}, // 1 ธ.ค. = จ.
+];
+// 0=อา 1=จ 2=อ 3=พ 4=พฤ 5=ศ 6=ส
+const DAY_SHORT = ['อา','จ.','อ.','พ.','พฤ.','ศ.','ส.'];
+const DAY_DC    = ['dc-sun','','','','','dc-fri','dc-sat'];
+
+let currentMonth = 0;
+let timeData = {};
+let weeklyOff = new Set([0]); // default อา. หยุด (เสาร์จัดการแยกด้วย satOff per-day)
+
+// ── PERSIST ──────────────────────────────────────────
+function loadSaved() {
+  try {
+    const s = localStorage.getItem('ts3');
+    if (s) {
+      const p = JSON.parse(s);
+      timeData  = p.timeData  || {};
+      weeklyOff = new Set(p.weeklyOff || [0,6]);
+      // rates + caps
+      const ids = ['rateNormal','rateOT125','rateOT15','normCapWD','ot125CapWD','normCapFri','ot125CapFri'];
+      ids.forEach(id => { if(p[id]!==undefined) document.getElementById(id).value = p[id]; });
+      if(p.friNoBreak !== undefined) document.getElementById('friNoBreak').checked = p.friNoBreak;
+    }
+  } catch(e){}
+}
+let unsaved = false;
+
+function markUnsaved() {
+  unsaved = true;
+  document.getElementById('floatSave').classList.add('show');
+}
+
+function saveData() {
+  const ids = ['rateNormal','rateOT125','rateOT15','normCapWD','ot125CapWD','normCapFri','ot125CapFri'];
+  const obj = { timeData, weeklyOff: [...weeklyOff], friNoBreak: document.getElementById('friNoBreak').checked };
+  ids.forEach(id => obj[id] = document.getElementById(id).value);
+  localStorage.setItem('ts3', JSON.stringify(obj));
+  unsaved = false;
+  document.getElementById('floatSave').classList.remove('show');
+  showToast('บันทึกแล้ว ✓');
+}
+function clearAll() {
+  if(!confirm('ล้างข้อมูลทั้งหมดหรือไม่?')) return;
+  timeData = {}; localStorage.removeItem('ts3');
+  renderMonth(currentMonth);
+}
+
+function exportData() {
+  const ids = ['rateNormal','rateOT125','rateOT15','normCapWD','ot125CapWD','normCapFri','ot125CapFri'];
+  const obj = { timeData, weeklyOff:[...weeklyOff], friNoBreak: document.getElementById('friNoBreak').checked };
+  ids.forEach(id => obj[id] = document.getElementById(id).value);
+
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+  const filename = `timesheet-backup-${dateStr}.json`;
+
+  const blob = new Blob([JSON.stringify(obj, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+  showToast('Export สำเร็จ 📤 บันทึกไว้ใน Downloads');
+}
+
+function importData(e) {
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const p = JSON.parse(ev.target.result);
+      if(!p.timeData) throw new Error('ไฟล์ไม่ถูกต้อง');
+      timeData = p.timeData;
+      if(p.weeklyOff) weeklyOff = new Set(p.weeklyOff);
+      const ids = ['rateNormal','rateOT125','rateOT15','normCapWD','ot125CapWD','normCapFri','ot125CapFri'];
+      ids.forEach(id => { if(p[id]!==undefined) document.getElementById(id).value = p[id]; });
+      if(p.friNoBreak !== undefined) document.getElementById('friNoBreak').checked = p.friNoBreak;
+      localStorage.setItem('ts3', JSON.stringify(p));
+      renderMonth(currentMonth);
+      updateSummary(currentMonth);
+      showToast('Import สำเร็จ ✅ ข้อมูลถูกโหลดแล้ว');
+    } catch(err) {
+      showToast('❌ ไฟล์ไม่ถูกต้อง กรุณาเลือกไฟล์ backup เท่านั้น');
+    }
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+}
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.textContent = msg;
+  t.style.cssText='position:fixed;bottom:20px;right:16px;background:#4f8ef7;color:#fff;padding:9px 18px;border-radius:9px;font-weight:700;z-index:999;font-family:Sarabun,sans-serif;font-size:13px;';
+  document.body.appendChild(t); setTimeout(()=>t.remove(),1800);
+}
+
+// ── WEEKLY OFF BUTTONS ────────────────────────────────
+function buildWeeklyOffBtns() {
+  const el = document.getElementById('weeklyOffBtns');
+  el.innerHTML = '';
+  const labels = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+  labels.forEach((lb,dow) => {
+    const b = document.createElement('button');
+    b.className = 'dayoff-btn' + (weeklyOff.has(dow)?' off':'');
+    b.textContent = (weeklyOff.has(dow)?'✕ ':'') + lb;
+    b.onclick = () => {
+      if(weeklyOff.has(dow)) weeklyOff.delete(dow); else weeklyOff.add(dow);
+      buildWeeklyOffBtns();
+      renderMonth(currentMonth);
+    };
+    el.appendChild(b);
+  });
+}
+
+// ── HELPERS ───────────────────────────────────────────
+function parseTime(s){if(!s||!s.includes(':'))return null;const[h,m]=s.split(':').map(Number);return isNaN(h)||isNaN(m)?null:h*60+m;}
+function fmtTime(v){if(v==null||isNaN(v)||v<0)return'--:--';return Math.floor(v/60)+':'+(v%60<10?'0':'')+v%60;}
+function fmtILS(n){if(!n||isNaN(n)||n===0)return'₪0.00';return'₪'+n.toLocaleString('he-IL',{minimumFractionDigits:2,maximumFractionDigits:2});}
+
+function gv(id){return parseFloat(document.getElementById(id).value)||0;}
+
+function updateOT15Labels(){
+  const wd  = gv('ot125CapWD');
+  const fri = gv('ot125CapFri');
+  document.getElementById('ot15StartWD').textContent  = wd;
+  document.getElementById('ot15StartFri').textContent = fri;
+}
+
+function calcRow(key, dow) {
+  const d = timeData[key]||{};
+  if(d.off) return null;
+  const inMin  = parseTime(d.in);
+  const outMin = parseTime(d.out);
+  if(inMin===null||outMin===null) return null;
+  const breakM = (d.break!==undefined && d.break!=='')?parseInt(d.break)||0:30;
+
+  const isFri = (dow===5);
+  const friNoBreak = isFri && document.getElementById('friNoBreak')?.checked;
+  const normCap  = (isFri ? gv('normCapFri')  : gv('normCapWD'))  * 60;
+  const ot125Cap = (isFri ? gv('ot125CapFri') : gv('ot125CapWD')) * 60;
+
+  const rNorm  = gv('rateNormal');
+  const rOT125 = gv('rateOT125');
+  const rOT15  = gv('rateOT15');
+
+  let raw = outMin - inMin;
+  if(raw < 0) raw = 0;
+  const actualBreak = friNoBreak ? 0 : breakM;
+  let worked = raw - actualBreak;
+  if(worked < 0) worked = 0;
+
+  const normalMins = Math.min(worked, normCap);
+  const ot125Mins  = Math.max(0, Math.min(worked, ot125Cap) - normCap);
+  const ot15Mins   = Math.max(0, worked - ot125Cap);
+  const money      = (normalMins/60)*rNorm + (ot125Mins/60)*rOT125 + (ot15Mins/60)*rOT15;
+
+  return {worked, beforeBreak: raw, normalMins, ot125Mins, ot15Mins, money, breakM};
+}
+
+function getDOW(mo, day){ return (mo.startDay + day - 1) % 7; }
+
+// ── RENDER ────────────────────────────────────────────
+// ── RENDER ────────────────────────────────────────────
+let selectedYear = MONTHS[0].year; // ปีที่เลือกอยู่
+
+function buildTabs() {
+  const el = document.getElementById('monthTabs');
+  el.innerHTML = '';
+
+  // รวบปี
+  const years = [...new Set(MONTHS.map(m => m.year))];
+
+  // แถวปี
+  const yearRow = document.createElement('div');
+  yearRow.className = 'year-row';
+  years.forEach(year => {
+    const b = document.createElement('button');
+    b.className = 'year-btn' + (year === selectedYear ? ' active' : '');
+    b.textContent = year;
+    b.onclick = () => {
+      selectedYear = year;
+      // ถ้าเดือนปัจจุบันไม่อยู่ในปีนี้ ให้เลือกเดือนแรกของปีนั้น
+      if(MONTHS[currentMonth].year !== year){
+        const first = MONTHS.findIndex(m => m.year === year);
+        if(first >= 0){ currentMonth = first; renderMonth(currentMonth); }
+      }
+      buildTabs();
+    };
+    yearRow.appendChild(b);
+  });
+  el.appendChild(yearRow);
+
+  // แถวเดือน (เฉพาะปีที่เลือก)
+  const monthRow = document.createElement('div');
+  monthRow.className = 'month-row';
+  MONTHS.forEach((m, i) => {
+    if(m.year !== selectedYear) return;
+    const b = document.createElement('button');
+    b.className = 'month-tab' + (i === currentMonth ? ' active' : '');
+    b.textContent = m.name;
+    b.onclick = () => { currentMonth = i; buildTabs(); renderMonth(i); };
+    monthRow.appendChild(b);
+  });
+  el.appendChild(monthRow);
+}
+
+function renderMonth(mi) {
+  const mo = MONTHS[mi];
+  const buddhistYear = mo.year + 543;
+  document.getElementById('headerYear').textContent = `₪ พ.ศ.${buddhistYear} — ${mo.name} ${mo.year}`;
+  updateOT15Labels();
+  const days=[];
+  for(let d=1;d<=mo.days;d++) days.push({d, dow:getDOW(mo,d)});
+
+  // group into weeks (break after Saturday, or after Friday if month ends)
+  const weeks=[]; let wk=[];
+  days.forEach(day=>{
+    wk.push(day);
+    if(day.dow===6){weeks.push(wk);wk=[];} // break week after Saturday
+    else if(day.dow===5){
+      // check if next day exists and is Saturday
+      const nextD = day.d+1;
+      if(nextD > mo.days) {weeks.push(wk);wk=[];}
+    }
+  });
+  if(wk.length) weeks.push(wk);
+
+  let html=`<div class="table-wrapper"><table>
+    <thead><tr>
+      <th style="text-align:left;padding-left:6px">วัน</th>
+      <th>สถานะ</th><th>เข้า</th><th>ออก</th>
+      <th>ก่อนหักพัก</th><th>หลังหักพัก</th>
+      <th>ปกติ</th><th>OT1.25</th><th>OT1.5</th><th>รวม(₪)</th>
+    </tr></thead>`;
+
+  weeks.forEach((week,wi)=>{
+    html+=`<tbody class="week-block">`;
+    let wN=0,w125=0,w15=0,wM=0,wBeforeBreak=0,wAfterBreak=0;
+
+    week.forEach(({d,dow})=>{
+      const key=`${mi}-${d}`;
+      const isSun=dow===0, isSat=dow===6, isFri=dow===5;
+      const stored=timeData[key]||{};
+
+      // เสาร์: default หยุด ยกเว้น user toggle เป็น working
+      // วันอื่น: default ทำงาน ยกเว้น user toggle เป็น off
+      let isOff;
+      if(isSat){
+        isOff = stored.satWorking ? false : true; // default หยุด
+      } else {
+        isOff = stored.off ? true : false;
+      }
+
+      const res = isOff ? null : calcRow(key, dow);
+      if(res){wN+=res.normalMins;w125+=res.ot125Mins;w15+=res.ot15Mins;wM+=res.money;
+              wBeforeBreak+=res.beforeBreak; wAfterBreak+=res.worked;}
+      const dc=DAY_DC[dow];
+
+      // ปุ่ม toggle สำหรับเสาร์ (หยุด/ทำงาน)
+      let toggleBtn = '';
+      if(isSat){
+        const isWorking = stored.satWorking;
+        toggleBtn = `<button class="off-btn ${isWorking?'is-working':'is-off'}"
+          onclick="toggleSat('${key}')" title="${isWorking?'คลิกเพื่อหยุด':'คลิกเพื่อทำงาน'}">
+          ${isWorking?'🟢 ทำงาน':'🔴 หยุด'}</button>`;
+      } else {
+        toggleBtn = `<span style="font-size:9px;color:var(--muted);">–</span>`;
+      }
+
+      html+=`<tr class="${isSun||isSat?'weekend':''} ${isOff?'dayoff-row-tr':''}">
+        <td><div class="day-cell ${dc}">
+          <span class="day-abbr">${DAY_SHORT[dow]}</span>
+          <span class="day-num">${d}</span>
+        </div></td>
+        <td>${toggleBtn}</td>
+        <td><input class="time-input${stored.in?' filled':''}" type="time" id="in_${key}" value="${stored.in||''}"
+          ${isOff?'disabled':''} onchange="onFC('${key}','in',this.value,${dow})"></td>
+        <td><input class="time-input${stored.out?' filled':''}" type="time" id="out_${key}" value="${stored.out||''}"
+          ${isOff?'disabled':''} onchange="onFC('${key}','out',this.value,${dow})"></td>
+        <td class="computed${res?' has-value':''}" id="bb_${key}">${res?fmtTime(res.beforeBreak):'--'}</td>
+        <td class="computed${res?' has-value':''}" id="net_${key}">${res?fmtTime(res.worked):'--'}</td>
+        <td class="computed${res?' has-value':''}" id="norm_${key}">${res?fmtTime(res.normalMins):'--'}</td>
+        <td class="computed c-ot125${res&&res.ot125Mins>0?' has-value':''}" id="ot125_${key}">${res&&res.ot125Mins>0?fmtTime(res.ot125Mins):'--'}</td>
+        <td class="computed c-ot15${res&&res.ot15Mins>0?' has-value':''}" id="ot15_${key}">${res&&res.ot15Mins>0?fmtTime(res.ot15Mins):'--'}</td>
+        <td class="computed c-money${res?' has-value':''}" id="money_${key}">${res?fmtILS(res.money):'--'}</td>
+      </tr>`;
+    });
+
+    html+=`<tr class="week-summary">
+      <td colspan="4" style="text-align:right;padding-right:8px;font-size:10px;">สัปดาห์ ${wi+1}</td>
+      <td class="ws-val" title="รวมชม.ก่อนหักพัก">${fmtTime(wBeforeBreak)}</td>
+      <td class="ws-val" title="รวมชม.หลังหักพัก">${fmtTime(wAfterBreak)}</td>
+      <td class="ws-val">${fmtTime(wN)}</td>
+      <td class="ws-ot125">${w125>0?fmtTime(w125):'--'}</td>
+      <td class="ws-ot15">${w15>0?fmtTime(w15):'--'}</td>
+      <td class="ws-money">${fmtILS(wM)}</td>
+    </tr></tbody>`;
+  });
+
+  // month total
+  let mN=0,m125=0,m15=0,mM=0,mD=0;
+  for(let d=1;d<=mo.days;d++){
+    const dow=getDOW(mo,d);
+    const key=`${mi}-${d}`;
+    const stored=timeData[key]||{};
+    const isSat=dow===6;
+    const isOff = isSat ? !stored.satWorking : stored.off;
+    if(isOff) continue;
+    const res=calcRow(key,dow);
+    if(res){mN+=res.normalMins;m125+=res.ot125Mins;m15+=res.ot15Mins;mM+=res.money;mD++;}
+  }
+
+  html+=`</table>
+  <div class="month-total">
+    <div class="mt-item"><div class="mt-label">วันทำงาน</div><div class="mt-value mt-normal">${mD} วัน</div></div>
+    <div class="mt-item"><div class="mt-label">ปกติ</div><div class="mt-value mt-normal">${fmtTime(mN)}</div></div>
+    <div class="mt-item"><div class="mt-label">OT 1.25x</div><div class="mt-value mt-ot125">${fmtTime(m125)}</div></div>
+    <div class="mt-item"><div class="mt-label">OT 1.5x</div><div class="mt-value mt-ot15">${fmtTime(m15)}</div></div>
+    <div class="mt-item"><div class="mt-label">💰 รวมเงิน</div><div class="mt-value mt-money">${fmtILS(mM)}</div></div>
+  </div></div>`;
+
+  document.getElementById('tableArea').innerHTML=html;
+  updateSummary(mi);
+}
+
+function toggleSat(key) {
+  if(!timeData[key]) timeData[key]={};
+  timeData[key].satWorking = !timeData[key].satWorking;
+  if(!timeData[key].satWorking){ timeData[key].in=''; timeData[key].out=''; }
+  markUnsaved();
+  renderMonth(currentMonth);
+}
+
+function toggleOff(key) {
+  if(!timeData[key]) timeData[key]={};
+  timeData[key].off = !timeData[key].off;
+  if(timeData[key].off){ timeData[key].in=''; timeData[key].out=''; }
+  markUnsaved();
+  renderMonth(currentMonth);
+}
+
+function onFC(key,field,val,dow) {
+  if(!timeData[key]) timeData[key]={};
+  timeData[key][field]=val;
+  updateRow(key,dow);
+  updateSummary(currentMonth);
+  markUnsaved();
+}
+
+function updateRow(key,dow) {
+  const res=calcRow(key,dow);
+  const set=(id,txt,cls)=>{const e=document.getElementById(id);if(e){e.textContent=txt;e.className='computed'+(cls?' '+cls:'');}};
+  if(res){
+    set('bb_'+key,   fmtTime(res.beforeBreak),'has-value');
+    set('net_'+key,   fmtTime(res.worked),   'has-value');
+    set('norm_'+key,  fmtTime(res.normalMins),'has-value');
+    set('ot125_'+key, res.ot125Mins>0?fmtTime(res.ot125Mins):'--','c-ot125'+(res.ot125Mins>0?' has-value':''));
+    set('ot15_'+key,  res.ot15Mins>0?fmtTime(res.ot15Mins):'--',  'c-ot15'+(res.ot15Mins>0?' has-value':''));
+    set('money_'+key, fmtILS(res.money),'c-money has-value');
+  } else {
+    ['bb','net','norm','ot125','ot15','money'].forEach(f=>set(f+'_'+key,'--',''));
+  }
+  const inEl=document.getElementById('in_'+key);
+  const outEl=document.getElementById('out_'+key);
+  if(inEl && timeData[key] && timeData[key].in) inEl.classList.add('filled');
+  if(outEl && timeData[key] && timeData[key].out) outEl.classList.add('filled');
+}
+
+function updateSummary(mi){
+  const mo=MONTHS[mi];
+  let mN=0,m125=0,m15=0,mM=0,mD=0;
+  for(let d=1;d<=mo.days;d++){
+    const dow=getDOW(mo,d);
+    const key=`${mi}-${d}`;
+    const stored=timeData[key]||{};
+    const isSat=dow===6;
+    const isOff = isSat ? !stored.satWorking : stored.off;
+    if(isOff) continue;
+    const res=calcRow(key,dow);
+    if(res){mN+=res.normalMins;m125+=res.ot125Mins;m15+=res.ot15Mins;mM+=res.money;mD++;}
+  }
+  document.getElementById('sumNormal').textContent=fmtTime(mN);
+  document.getElementById('sumOT125').textContent=fmtTime(m125);
+  document.getElementById('sumOT15').textContent=fmtTime(m15);
+  document.getElementById('sumDays').textContent=mD+' วัน';
+  document.getElementById('sumMoney').textContent=fmtILS(mM);
+}
+
+function recalcAll(){ updateOT15Labels(); renderMonth(currentMonth); }
+
+// ── INIT ──────────────────────────────────────────────
+loadSaved();
+buildTabs();
+renderMonth(0);
+// ── SERVICE WORKER (inline) ───────────────────────────
+if('serviceWorker' in navigator){
+  const swCode = `
+const CACHE='ts-v2';
+const ASSETS=['./'];
+self.addEventListener('install',e=>{
+  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)));
+  self.skipWaiting();
+});
+self.addEventListener('activate',e=>{
+  e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));
+  self.clients.claim();
+});
+self.addEventListener('fetch',e=>{
+  e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{
+    const c=res.clone();
+    caches.open(CACHE).then(ca=>ca.put(e.request,c));
+    return res;
+  })).catch(()=>caches.match('./')));
+});`;
+  const blob = new Blob([swCode], {type:'application/javascript'});
+  const swUrl = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(swUrl)
+    .then(()=>console.log('SW OK'))
+    .catch(e=>console.log('SW skip:',e));
+}
+</script>
+</body>
+</html>
