@@ -77,7 +77,7 @@
   .month-tab.active{background:var(--accent);border-color:var(--accent);color:#fff;}
 
   /* ── SUMMARY ── */
-  .summary-grid{display:-webkit-grid;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
+  .summary-grid{display:-webkit-grid;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;}
   .summary-card{background:var(--card);border:1px solid var(--border);border-radius:9px;padding:14px 12px 12px;}
   .summary-card .label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;font-weight:600;}
   .summary-card .value{font-family:var(--mono);font-size:20px;font-weight:700;}
@@ -118,11 +118,11 @@
   .off-btn.is-off{background:rgba(247,95,95,.15);border-color:var(--danger);color:var(--danger);}
   .off-btn.is-working{background:rgba(79,207,142,.15);border-color:var(--accent3);color:var(--accent3);}
 
-  .computed{font-family:var(--mono);font-size:11px;color:var(--muted);}
-  .computed.has-value{color:var(--text);}
-  .c-ot125{color:var(--accent2);}
-  .c-ot15{color:var(--danger);}
-  .c-money{color:var(--accent3);font-weight:700;}
+  .break-toggle{width:28px;height:28px;border-radius:50%;border:none;cursor:pointer;
+    font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center;
+    transition:all .15s;padding:0;background:none;}
+  .break-toggle.has-break{color:#ffe97a;text-shadow:0 0 6px rgba(255,233,122,.5);}
+  .break-toggle.no-break{color:#374060;}
 
   tr.week-summary td{background:rgba(79,142,247,.10);font-size:13px;font-weight:800;
     color:#a0b4d0;padding:8px 4px;border-top:2px solid rgba(79,142,247,.3);}
@@ -210,10 +210,6 @@
           <div class="sg"><input type="number" id="normCapFri" value="2" min="1" max="24" step=".5" onchange="recalcAll()"></div>
           <div class="sg"><label>OT1.25 สูงสุด (ชม.)</label><input type="number" id="ot125CapFri" value="2" min="1" max="24" step=".5" onchange="recalcAll()"></div>
           <div style="font-size:9px;color:var(--muted);padding-top:4px;">OT1.5 หลัง <span id="ot15StartFri" style="color:var(--danger)">2</span> ชม.</div>
-          <label style="display:flex;align-items:center;gap:5px;margin-top:4px;cursor:pointer;font-size:10px;color:var(--muted);">
-            <input type="checkbox" id="friNoBreak" checked onchange="recalcAll()" style="accent-color:var(--accent);cursor:pointer;">
-            ไม่หักพักวันศุกร์
-          </label>
         </div>
       </div>
 
@@ -236,6 +232,7 @@
     <div class="summary-card"><div class="label">ปกติ</div><div class="value v-blue" id="sumNormal">0:00</div></div>
     <div class="summary-card"><div class="label">OT 1.25x</div><div class="value v-orange" id="sumOT125">0:00</div></div>
     <div class="summary-card"><div class="label">OT 1.5x</div><div class="value v-red" id="sumOT15">0:00</div></div>
+    <div class="summary-card"><div class="label">⏱ ชม.รวม</div><div class="value" style="color:#ffe97a;" id="sumTotal">0:00</div></div>
     <div class="summary-card wide"><div class="label">💰 รวมเงินเดือนนี้</div><div class="value v-green" id="sumMoney">₪0.00</div></div>
     <div class="summary-card"><div class="label">วันทำงาน</div><div class="value v-blue" id="sumDays">0 วัน</div></div>
   </div>
@@ -342,7 +339,6 @@ function loadSaved() {
       // rates + caps
       const ids = ['rateNormal','rateOT125','rateOT15','normCapWD','ot125CapWD','normCapFri','ot125CapFri'];
       ids.forEach(id => { if(p[id]!==undefined) document.getElementById(id).value = p[id]; });
-      if(p.friNoBreak !== undefined) document.getElementById('friNoBreak').checked = p.friNoBreak;
     }
   } catch(e){}
 }
@@ -355,7 +351,7 @@ function markUnsaved() {
 
 function saveData() {
   const ids = ['rateNormal','rateOT125','rateOT15','normCapWD','ot125CapWD','normCapFri','ot125CapFri'];
-  const obj = { timeData, weeklyOff: [...weeklyOff], friNoBreak: document.getElementById('friNoBreak').checked };
+  const obj = { timeData, weeklyOff:[...weeklyOff] };
   ids.forEach(id => obj[id] = document.getElementById(id).value);
   localStorage.setItem('ts3', JSON.stringify(obj));
   unsaved = false;
@@ -370,7 +366,7 @@ function clearAll() {
 
 function exportData() {
   const ids = ['rateNormal','rateOT125','rateOT15','normCapWD','ot125CapWD','normCapFri','ot125CapFri'];
-  const obj = { timeData, weeklyOff:[...weeklyOff], friNoBreak: document.getElementById('friNoBreak').checked };
+  const obj = { timeData, weeklyOff:[...weeklyOff] };
   ids.forEach(id => obj[id] = document.getElementById(id).value);
 
   const now = new Date();
@@ -397,7 +393,6 @@ function importData(e) {
       if(p.weeklyOff) weeklyOff = new Set(p.weeklyOff);
       const ids = ['rateNormal','rateOT125','rateOT15','normCapWD','ot125CapWD','normCapFri','ot125CapFri'];
       ids.forEach(id => { if(p[id]!==undefined) document.getElementById(id).value = p[id]; });
-      if(p.friNoBreak !== undefined) document.getElementById('friNoBreak').checked = p.friNoBreak;
       localStorage.setItem('ts3', JSON.stringify(p));
       renderMonth(currentMonth);
       updateSummary(currentMonth);
@@ -448,16 +443,15 @@ function updateOT15Labels(){
   document.getElementById('ot15StartFri').textContent = fri;
 }
 
-function calcRow(key, dow) {
+function calcRow(key, dow, noBreak) {
   const d = timeData[key]||{};
   if(d.off) return null;
   const inMin  = parseTime(d.in);
   const outMin = parseTime(d.out);
   if(inMin===null||outMin===null) return null;
-  const breakM = (d.break!==undefined && d.break!=='')?parseInt(d.break)||0:30;
+  const breakM = noBreak ? 0 : 30; // หักพัก 30 นาที หรือ ไม่หัก
 
   const isFri = (dow===5);
-  const friNoBreak = isFri && document.getElementById('friNoBreak')?.checked;
   const normCap  = (isFri ? gv('normCapFri')  : gv('normCapWD'))  * 60;
   const ot125Cap = (isFri ? gv('ot125CapFri') : gv('ot125CapWD')) * 60;
 
@@ -467,8 +461,7 @@ function calcRow(key, dow) {
 
   let raw = outMin - inMin;
   if(raw < 0) raw = 0;
-  const actualBreak = friNoBreak ? 0 : breakM;
-  let worked = raw - actualBreak;
+  let worked = raw - breakM;
   if(worked < 0) worked = 0;
 
   const normalMins = Math.min(worked, normCap);
@@ -550,7 +543,7 @@ function renderMonth(mi) {
   let html=`<div class="table-wrapper"><table>
     <thead><tr>
       <th style="text-align:left;padding-left:6px">วัน</th>
-      <th>สถานะ</th><th>เข้า</th><th>ออก</th>
+      <th>สถานะ</th><th>เข้า</th><th>ออก</th><th>พัก</th>
       <th>ก่อนหักพัก</th><th>หลังหักพัก</th>
       <th>ปกติ</th><th>OT1.25</th><th>OT1.5</th><th>รวม(₪)</th>
     </tr></thead>`;
@@ -573,7 +566,15 @@ function renderMonth(mi) {
         isOff = stored.off ? true : false;
       }
 
-      const res = isOff ? null : calcRow(key, dow);
+      // default break logic: อา-พฤ หักพัก, ศุกร์ ไม่หัก
+      // stored.noBreak=true = ไม่หักพัก, stored.noBreak=false/undefined = ใช้ default
+      const defaultNoBreak = isFri; // ศุกร์ default ไม่หัก
+      const noBreak = stored.noBreak !== undefined ? stored.noBreak : defaultNoBreak;
+      // ส่งค่า break ไปใน calcRow ผ่าน timeData
+      if(!timeData[key]) timeData[key]={};
+      timeData[key]._noBreak = noBreak; // ใช้ภายใน
+
+      const res = isOff ? null : calcRow(key, dow, noBreak);
       if(res){wN+=res.normalMins;w125+=res.ot125Mins;w15+=res.ot15Mins;wM+=res.money;
               wBeforeBreak+=res.beforeBreak; wAfterBreak+=res.worked;}
       const dc=DAY_DC[dow];
@@ -589,6 +590,12 @@ function renderMonth(mi) {
         toggleBtn = `<span style="font-size:9px;color:var(--muted);">–</span>`;
       }
 
+      // ปุ่ม break toggle: 🟡=หักพัก, ⚫=ไม่หัก
+      const breakBtn = isOff ? `<span style="color:var(--border);font-size:14px;">○</span>`
+        : `<button class="break-toggle ${noBreak?'no-break':'has-break'}"
+            onclick="toggleBreak('${key}',${isFri})" title="${noBreak?'ไม่หักพัก (คลิกเพื่อหัก)':'หักพัก (คลิกเพื่อไม่หัก)'}">
+            ●</button>`;
+
       html+=`<tr class="${isSun||isSat?'weekend':''} ${isOff?'dayoff-row-tr':''}">
         <td><div class="day-cell ${dc}">
           <span class="day-abbr">${DAY_SHORT[dow]}</span>
@@ -599,6 +606,7 @@ function renderMonth(mi) {
           ${isOff?'disabled':''} onchange="onFC('${key}','in',this.value,${dow})"></td>
         <td><input class="time-input${stored.out?' filled':''}" type="time" id="out_${key}" value="${stored.out||''}"
           ${isOff?'disabled':''} onchange="onFC('${key}','out',this.value,${dow})"></td>
+        <td>${breakBtn}</td>
         <td class="computed${res?' has-value':''}" id="bb_${key}">${res?fmtTime(res.beforeBreak):'--'}</td>
         <td class="computed${res?' has-value':''}" id="net_${key}">${res?fmtTime(res.worked):'--'}</td>
         <td class="computed${res?' has-value':''}" id="norm_${key}">${res?fmtTime(res.normalMins):'--'}</td>
@@ -609,7 +617,7 @@ function renderMonth(mi) {
     });
 
     html+=`<tr class="week-summary">
-      <td colspan="4" style="text-align:right;padding-right:8px;font-size:10px;">สัปดาห์ ${wi+1}</td>
+      <td colspan="5" style="text-align:right;padding-right:8px;font-size:10px;">สัปดาห์ ${wi+1}</td>
       <td class="ws-val" title="รวมชม.ก่อนหักพัก">${fmtTime(wBeforeBreak)}</td>
       <td class="ws-val" title="รวมชม.หลังหักพัก">${fmtTime(wAfterBreak)}</td>
       <td class="ws-val">${fmtTime(wN)}</td>
@@ -625,10 +633,11 @@ function renderMonth(mi) {
     const dow=getDOW(mo,d);
     const key=`${mi}-${d}`;
     const stored=timeData[key]||{};
-    const isSat=dow===6;
+    const isSat=dow===6, isFri2=dow===5;
     const isOff = isSat ? !stored.satWorking : stored.off;
     if(isOff) continue;
-    const res=calcRow(key,dow);
+    const noBreak2 = stored.noBreak !== undefined ? stored.noBreak : isFri2;
+    const res=calcRow(key,dow,noBreak2);
     if(res){mN+=res.normalMins;m125+=res.ot125Mins;m15+=res.ot15Mins;mM+=res.money;mD++;}
   }
 
@@ -643,6 +652,24 @@ function renderMonth(mi) {
 
   document.getElementById('tableArea').innerHTML=html;
   updateSummary(mi);
+}
+
+function toggleBreak(key, isFri) {
+  if(!timeData[key]) timeData[key]={};
+  const stored = timeData[key];
+  // default: ศุกร์=ไม่หัก, อื่นๆ=หัก
+  const defaultNoBreak = isFri;
+  const current = stored.noBreak !== undefined ? stored.noBreak : defaultNoBreak;
+  stored.noBreak = !current;
+  const dow = parseInt(key.split('-')[2]) ? null : null; // ไม่ใช้
+  // หา dow จริงจาก key
+  const parts = key.split('-');
+  const mi = parseInt(parts[0]), d = parseInt(parts[1]);
+  const dowReal = getDOW(MONTHS[mi], d);
+  markUnsaved();
+  updateRow(key, dowReal);
+  updateSummary(currentMonth);
+  renderMonth(currentMonth);
 }
 
 function toggleSat(key) {
@@ -670,7 +697,11 @@ function onFC(key,field,val,dow) {
 }
 
 function updateRow(key,dow) {
-  const res=calcRow(key,dow);
+  const stored = timeData[key]||{};
+  const isFri = dow===5;
+  const defaultNoBreak = isFri;
+  const noBreak = stored.noBreak !== undefined ? stored.noBreak : defaultNoBreak;
+  const res=calcRow(key,dow,noBreak);
   const set=(id,txt,cls)=>{const e=document.getElementById(id);if(e){e.textContent=txt;e.className='computed'+(cls?' '+cls:'');}};
   if(res){
     set('bb_'+key,   fmtTime(res.beforeBreak),'has-value');
@@ -695,10 +726,11 @@ function updateSummary(mi){
     const dow=getDOW(mo,d);
     const key=`${mi}-${d}`;
     const stored=timeData[key]||{};
-    const isSat=dow===6;
+    const isSat=dow===6, isFriS=dow===5;
     const isOff = isSat ? !stored.satWorking : stored.off;
     if(isOff) continue;
-    const res=calcRow(key,dow);
+    const noBreakS = stored.noBreak !== undefined ? stored.noBreak : isFriS;
+    const res=calcRow(key,dow,noBreakS);
     if(res){mN+=res.normalMins;m125+=res.ot125Mins;m15+=res.ot15Mins;mM+=res.money;mD++;}
   }
   document.getElementById('sumNormal').textContent=fmtTime(mN);
@@ -706,6 +738,7 @@ function updateSummary(mi){
   document.getElementById('sumOT15').textContent=fmtTime(m15);
   document.getElementById('sumDays').textContent=mD+' วัน';
   document.getElementById('sumMoney').textContent=fmtILS(mM);
+  document.getElementById('sumTotal').textContent=fmtTime(mN+m125+m15);
 }
 
 function recalcAll(){ updateOT15Labels(); renderMonth(currentMonth); }
