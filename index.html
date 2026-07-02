@@ -746,7 +746,17 @@ function recalcAll(){ updateOT15Labels(); renderMonth(currentMonth); }
 // ── INIT ──────────────────────────────────────────────
 loadSaved();
 buildTabs();
-renderMonth(0);
+
+// หาเดือนปัจจุบัน
+const _now = new Date();
+const _curY = _now.getFullYear();
+const _curM = _now.getMonth() + 1; // 1-12
+const _curIdx = MONTHS.findIndex(m => m.year === _curY && m.m === _curM);
+currentMonth = _curIdx >= 0 ? _curIdx : 0;
+selectedYear = MONTHS[currentMonth].year;
+
+buildTabs();
+renderMonth(currentMonth);
 // ── SERVICE WORKER (inline) ───────────────────────────
 if('serviceWorker' in navigator){
   const swCode = `
