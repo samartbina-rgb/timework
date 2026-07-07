@@ -251,9 +251,10 @@
       <div class="summary-card"><div class="label">วันทำงาน</div><div class="value v-blue" id="sumDays">0 วัน</div></div>
       <div class="summary-card big"><div class="label">💰 รวมเงินเดือนนี้</div><div class="value v-green" id="sumMoney">₪0.00</div></div>
     </div>
-    <!-- แถว 3: ภาษี | ค่าที่พัก | รายได้สุทธิ -->
-    <div class="summary-row r3c">
+    <!-- แถว 3: ภาษี | เงินภาษี | ค่าที่พัก | รายได้สุทธิ -->
+    <div class="summary-row" style="grid-template-columns:1fr 1fr 1fr 2fr;">
       <div class="summary-card"><div class="label">ภาษี (%)<input class="sum-input" id="taxPct" type="number" value="0" min="0" max="100" step="0.1" onchange="calcNet()"></div></div>
+      <div class="summary-card"><div class="label">หัก ภาษี (₪)</div><div class="value v-red" id="sumTax" style="font-size:15px;">₪0.00</div></div>
       <div class="summary-card"><div class="label">ค่าที่พัก (₪)<input class="sum-input" id="rentAmt" type="number" value="0" min="0" step="1" onchange="calcNet()"></div></div>
       <div class="summary-card big net-card"><div class="label">💵 รายได้สุทธิ</div><div class="value" style="color:#a0ffcc;" id="sumNet">₪0.00</div></div>
     </div>
@@ -768,7 +769,9 @@ function calcNet(){
   const gross = parseFloat((document.getElementById('sumMoney').textContent||'0').replace(/[^0-9.]/g,''))||0;
   const tax   = parseFloat(document.getElementById('taxPct').value)||0;
   const rent  = parseFloat(document.getElementById('rentAmt').value)||0;
-  const net   = gross * (1 - tax/100) - rent;
+  const taxAmt = gross * (tax/100);
+  const net   = gross - taxAmt - rent;
+  document.getElementById('sumTax').textContent = fmtILS(taxAmt);
   document.getElementById('sumNet').textContent = fmtILS(Math.max(0, net));
 }
 
