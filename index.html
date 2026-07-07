@@ -79,10 +79,20 @@
   /* ── SUMMARY ── */
   .summary-grid{display:-webkit-grid;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;}
   .summary-card{background:var(--card);border:1px solid var(--border);border-radius:9px;padding:14px 12px 12px;}
+  .summary-card.sm{padding:10px 10px 10px;display:flex;flex-direction:column;justify-content:flex-start;}
   .summary-card .label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;font-weight:600;}
+  .summary-card.sm .label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;font-weight:600;}
   .summary-card .value{font-family:var(--mono);font-size:20px;font-weight:700;}
+  .summary-card.sm .value{font-family:var(--mono);font-size:15px;font-weight:700;}
+  .summary-card.lg{background:var(--card);border:1px solid var(--border);border-radius:9px;padding:10px 10px 10px;display:flex;flex-direction:column;justify-content:flex-start;}
+  .summary-card.lg .label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;font-weight:600;}
+  .summary-card.lg .value{font-family:var(--mono);font-size:22px;font-weight:800;}
   .v-blue{color:var(--accent);} .v-orange{color:var(--accent2);} .v-red{color:var(--danger);} .v-green{color:var(--accent3);}
-  .summary-card.wide{grid-column:span 2;}
+  .sum-input{background:var(--surface);border:1px solid var(--border);color:var(--text);
+    border-radius:5px;padding:3px 6px;font-family:var(--mono);font-size:13px;width:100%;margin-top:4px;
+    outline:none;-webkit-appearance:none;appearance:none;}
+  .sum-input:focus{border-color:var(--accent);}
+  .net-card{border-color:rgba(160,255,204,.3)!important;background:rgba(160,255,204,.05)!important;}
 
   /* ── TABLE ── */
   .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;width:100%;}
@@ -208,8 +218,8 @@
         <div class="section-label">✡️ เกณฑ์ OT — วันศุกร์</div>
         <div style="display:flex;flex-direction:column;gap:4px;">
           <div class="sg"><input type="number" id="normCapFri" value="2" min="1" max="24" step=".5" onchange="recalcAll()"></div>
-          <div class="sg"><label>OT1.25 สูงสุด (ชม.)</label><input type="number" id="ot125CapFri" value="2" min="1" max="24" step=".5" onchange="recalcAll()"></div>
-          <div style="font-size:9px;color:var(--muted);padding-top:4px;">OT1.5 หลัง <span id="ot15StartFri" style="color:var(--danger)">2</span> ชม.</div>
+          <div class="sg"><label>OT1.25 สูงสุด (ชม.)</label><input type="number" id="ot125CapFri" value="4" min="1" max="24" step=".5" onchange="recalcAll()"></div>
+          <div style="font-size:9px;color:var(--muted);padding-top:4px;">OT1.5 หลัง <span id="ot15StartFri" style="color:var(--danger)">4</span> ชม.</div>
         </div>
       </div>
 
@@ -229,12 +239,15 @@
 
   <!-- SUMMARY -->
   <div class="summary-grid">
-    <div class="summary-card"><div class="label">ปกติ</div><div class="value v-blue" id="sumNormal">0:00</div></div>
-    <div class="summary-card"><div class="label">OT 1.25x</div><div class="value v-orange" id="sumOT125">0:00</div></div>
-    <div class="summary-card"><div class="label">OT 1.5x</div><div class="value v-red" id="sumOT15">0:00</div></div>
-    <div class="summary-card"><div class="label">⏱ ชม.รวม</div><div class="value" style="color:#ffe97a;" id="sumTotal">0:00</div></div>
+    <div class="summary-card sm"><div class="label">ปกติ</div><div class="value v-blue" id="sumNormal">0:00</div></div>
+    <div class="summary-card sm"><div class="label">OT 1.25x</div><div class="value v-orange" id="sumOT125">0:00</div></div>
+    <div class="summary-card sm"><div class="label">OT 1.5x</div><div class="value v-red" id="sumOT15">0:00</div></div>
+    <div class="summary-card lg"><div class="label">⏱ ชม.รวม</div><div class="value" style="color:#ffe97a;" id="sumTotal">0:00</div></div>
+    <div class="summary-card sm"><div class="label">วันทำงาน</div><div class="value v-blue" id="sumDays">0 วัน</div></div>
     <div class="summary-card wide"><div class="label">💰 รวมเงินเดือนนี้</div><div class="value v-green" id="sumMoney">₪0.00</div></div>
-    <div class="summary-card"><div class="label">วันทำงาน</div><div class="value v-blue" id="sumDays">0 วัน</div></div>
+    <div class="summary-card sm"><div class="label">ภาษี (%)<input class="sum-input" id="taxPct" type="number" value="0" min="0" max="100" step="0.1" onchange="calcNet()"></div></div>
+    <div class="summary-card sm"><div class="label">ค่าที่พัก (₪)<input class="sum-input" id="rentAmt" type="number" value="0" min="0" step="1" onchange="calcNet()"></div></div>
+    <div class="summary-card wide net-card"><div class="label">💵 รายได้สุทธิ</div><div class="value" style="color:#a0ffcc;" id="sumNet">₪0.00</div></div>
   </div>
 
   <!-- TABLE -->
@@ -337,7 +350,7 @@ function loadSaved() {
       timeData  = p.timeData  || {};
       weeklyOff = new Set(p.weeklyOff || [0,6]);
       // rates + caps
-      const ids = ['rateNormal','rateOT125','rateOT15','normCapWD','ot125CapWD','normCapFri','ot125CapFri'];
+      const ids = ['rateNormal','rateOT125','rateOT15','normCapWD','ot125CapWD','normCapFri','ot125CapFri','taxPct','rentAmt'];
       ids.forEach(id => { if(p[id]!==undefined) document.getElementById(id).value = p[id]; });
     }
   } catch(e){}
@@ -350,7 +363,7 @@ function markUnsaved() {
 }
 
 function saveData() {
-  const ids = ['rateNormal','rateOT125','rateOT15','normCapWD','ot125CapWD','normCapFri','ot125CapFri'];
+  const ids = ['rateNormal','rateOT125','rateOT15','normCapWD','ot125CapWD','normCapFri','ot125CapFri','taxPct','rentAmt'];
   const obj = { timeData, weeklyOff:[...weeklyOff] };
   ids.forEach(id => obj[id] = document.getElementById(id).value);
   localStorage.setItem('ts3', JSON.stringify(obj));
@@ -365,7 +378,7 @@ function clearAll() {
 }
 
 function exportData() {
-  const ids = ['rateNormal','rateOT125','rateOT15','normCapWD','ot125CapWD','normCapFri','ot125CapFri'];
+  const ids = ['rateNormal','rateOT125','rateOT15','normCapWD','ot125CapWD','normCapFri','ot125CapFri','taxPct','rentAmt'];
   const obj = { timeData, weeklyOff:[...weeklyOff] };
   ids.forEach(id => obj[id] = document.getElementById(id).value);
 
@@ -391,7 +404,7 @@ function importData(e) {
       if(!p.timeData) throw new Error('ไฟล์ไม่ถูกต้อง');
       timeData = p.timeData;
       if(p.weeklyOff) weeklyOff = new Set(p.weeklyOff);
-      const ids = ['rateNormal','rateOT125','rateOT15','normCapWD','ot125CapWD','normCapFri','ot125CapFri'];
+      const ids = ['rateNormal','rateOT125','rateOT15','normCapWD','ot125CapWD','normCapFri','ot125CapFri','taxPct','rentAmt'];
       ids.forEach(id => { if(p[id]!==undefined) document.getElementById(id).value = p[id]; });
       localStorage.setItem('ts3', JSON.stringify(p));
       renderMonth(currentMonth);
@@ -739,6 +752,15 @@ function updateSummary(mi){
   document.getElementById('sumDays').textContent=mD+' วัน';
   document.getElementById('sumMoney').textContent=fmtILS(mM);
   document.getElementById('sumTotal').textContent=fmtTime(mN+m125+m15);
+  calcNet();
+}
+
+function calcNet(){
+  const gross = parseFloat((document.getElementById('sumMoney').textContent||'0').replace(/[^0-9.]/g,''))||0;
+  const tax   = parseFloat(document.getElementById('taxPct').value)||0;
+  const rent  = parseFloat(document.getElementById('rentAmt').value)||0;
+  const net   = gross * (1 - tax/100) - rent;
+  document.getElementById('sumNet').textContent = fmtILS(Math.max(0, net));
 }
 
 function recalcAll(){ updateOT15Labels(); renderMonth(currentMonth); }
