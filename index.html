@@ -134,7 +134,7 @@
   .break-toggle.has-break{color:#ffe97a;text-shadow:0 0 6px rgba(255,233,122,.5);}
   .break-toggle.no-break{color:#374060;}
 
-  tr.week-summary td{background:rgba(79,142,247,.10);font-size:13px;font-weight:800;
+  tr.month-total-row td{background:rgba(61,222,160,.07);padding:8px 4px;border-top:2px solid rgba(61,222,160,.3);}
     color:#a0b4d0;padding:8px 4px;border-top:2px solid rgba(79,142,247,.3);}
   .ws-val{font-family:var(--mono);color:#ffe97a;font-size:14px;font-weight:800;}
   .ws-ot125{font-family:var(--mono);color:#ffc266;font-size:14px;font-weight:800;}
@@ -677,7 +677,7 @@ function renderMonth(mi) {
   });
 
   // month total
-  let mN=0,m125=0,m15=0,mM=0,mD=0;
+  let mN=0,m125=0,m15=0,mM=0,mD=0,mBefore=0,mAfter=0;
   for(let d=1;d<=mo.days;d++){
     const dow=getDOW(mo,d);
     const key=`${mi}-${d}`;
@@ -687,10 +687,19 @@ function renderMonth(mi) {
     if(isOff) continue;
     const noBreak2 = stored.noBreak !== undefined ? stored.noBreak : isFri2;
     const res=calcRow(key,dow,noBreak2);
-    if(res){mN+=res.normalMins;m125+=res.ot125Mins;m15+=res.ot15Mins;mM+=res.money;mD++;}
+    if(res){mN+=res.normalMins;m125+=res.ot125Mins;m15+=res.ot15Mins;mM+=res.money;mD++;
+            mBefore+=res.beforeBreak; mAfter+=res.worked;}
   }
 
-  html+=`</table>
+  html+=`<tfoot><tr class="month-total-row">
+    <td colspan="5" style="text-align:right;padding-right:8px;font-size:10px;font-weight:700;color:var(--muted);">รวมเดือน</td>
+    <td style="font-family:var(--mono);font-size:12px;font-weight:800;color:#ffe97a;">${fmtTime(mBefore)}</td>
+    <td style="font-family:var(--mono);font-size:12px;font-weight:800;color:#ffe97a;">${fmtTime(mAfter)}</td>
+    <td style="font-family:var(--mono);font-size:12px;font-weight:800;color:var(--accent);">${fmtTime(mN)}</td>
+    <td style="font-family:var(--mono);font-size:12px;font-weight:800;color:var(--accent2);">${m125>0?fmtTime(m125):'--'}</td>
+    <td style="font-family:var(--mono);font-size:12px;font-weight:800;color:var(--danger);">${m15>0?fmtTime(m15):'--'}</td>
+    <td style="font-family:var(--mono);font-size:13px;font-weight:800;color:#7fffc4;">${fmtILS(mM)}</td>
+  </tr></tfoot></table>
   <div class="month-total">
     <div class="mt-item"><div class="mt-label">วันทำงาน</div><div class="mt-value mt-normal">${mD} วัน</div></div>
     <div class="mt-item"><div class="mt-label">ปกติ</div><div class="mt-value mt-normal">${fmtTime(mN)}</div></div>
