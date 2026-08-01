@@ -242,9 +242,21 @@
 
     <!-- แถว 1: ชม.ทำงาน -->
     <div class="summary-row r3">
-      <div class="summary-card"><div class="label">ปกติ</div><div class="value v-blue" id="sumNormal">0:00</div></div>
-      <div class="summary-card"><div class="label">OT 1.25x</div><div class="value v-orange" id="sumOT125">0:00</div></div>
-      <div class="summary-card"><div class="label">OT 1.5x</div><div class="value v-red" id="sumOT15">0:00</div></div>
+      <div class="summary-card">
+        <div class="label">ปกติ</div>
+        <div class="value v-blue" id="sumNormal">0:00</div>
+        <div style="font-family:var(--mono);font-size:11px;color:var(--accent);opacity:.8;margin-top:4px;" id="sumNormalMoney">₪0.00</div>
+      </div>
+      <div class="summary-card">
+        <div class="label">OT 1.25x</div>
+        <div class="value v-orange" id="sumOT125">0:00</div>
+        <div style="font-family:var(--mono);font-size:11px;color:var(--accent2);opacity:.8;margin-top:4px;" id="sumOT125Money">₪0.00</div>
+      </div>
+      <div class="summary-card">
+        <div class="label">OT 1.5x</div>
+        <div class="value v-red" id="sumOT15">0:00</div>
+        <div style="font-family:var(--mono);font-size:11px;color:var(--danger);opacity:.8;margin-top:4px;" id="sumOT15Money">₪0.00</div>
+      </div>
     </div>
 
     <!-- แถว 2: สรุปภาพรวม -->
@@ -797,6 +809,11 @@ function updateSummary(mi){
   document.getElementById('sumDays').textContent=mD+' วัน';
   document.getElementById('sumMoney').textContent=fmtILS(mM);
   document.getElementById('sumTotal').textContent=fmtTime(mN+m125+m15);
+  // เงินแต่ละประเภท
+  const rN=gv('rateNormal'), r125=gv('rateOT125'), r15=gv('rateOT15');
+  document.getElementById('sumNormalMoney').textContent=fmtILS((mN/60)*rN);
+  document.getElementById('sumOT125Money').textContent=fmtILS((m125/60)*r125);
+  document.getElementById('sumOT15Money').textContent=fmtILS((m15/60)*r15);
   calcNet();
 }
 
