@@ -116,7 +116,7 @@
   .dc-sat .day-abbr,.dc-sat .day-num{color:var(--accent2);}
 
   .time-input{background:var(--surface);border:1px solid var(--border);color:var(--text);
-    border-radius:5px;padding:4px 3px;font-family:var(--mono);font-size:11px;width:72px;text-align:center;outline:none;
+    border-radius:5px;padding:4px 1px;font-family:var(--mono);font-size:10px;width:58px;text-align:center;outline:none;
     -webkit-appearance:none;appearance:none;}
   .time-input:focus{border-color:var(--accent);}
   .time-input.filled{border-color:rgba(79,142,247,.55);}
@@ -128,7 +128,12 @@
   .off-btn.is-off{background:rgba(247,95,95,.15);border-color:var(--danger);color:var(--danger);}
   .off-btn.is-working{background:rgba(79,207,142,.15);border-color:var(--accent3);color:var(--accent3);}
 
-  .break-toggle{width:28px;height:28px;border-radius:50%;border:none;cursor:pointer;
+  .order-input{background:var(--surface);border:1px solid var(--border);color:#a0ffcc;
+    border-radius:5px;padding:4px 2px;font-family:var(--mono);font-size:11px;width:38px;text-align:center;outline:none;
+    -webkit-appearance:none;appearance:none;}
+  .order-input:focus{border-color:#a0ffcc;}
+  .order-input:disabled{opacity:.25;}
+  .ws-orders{font-family:var(--mono);font-size:13px;font-weight:800;color:#a0ffcc;}
     font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center;
     transition:all .15s;padding:0;background:none;}
   .break-toggle.has-break{color:#ffe97a;text-shadow:0 0 6px rgba(255,233,122,.5);}
@@ -604,14 +609,14 @@ function renderMonth(mi) {
   let html=`<div class="table-wrapper"><table>
     <thead><tr>
       <th style="text-align:left;padding-left:6px">วัน</th>
-      <th>สถานะ</th><th>เข้า</th><th>ออก</th><th>พัก</th>
+      <th>สถานะ</th><th>เข้า</th><th>ออก</th><th>ออเดอร์</th><th>พัก</th>
       <th>ก่อนหักพัก</th><th>หลังหักพัก</th>
       <th>ปกติ</th><th>OT1.25</th><th>OT1.5</th><th>รวม(₪)</th>
     </tr></thead>`;
 
   weeks.forEach((week,wi)=>{
     html+=`<tbody class="week-block">`;
-    let wN=0,w125=0,w15=0,wM=0,wBeforeBreak=0,wAfterBreak=0;
+    let wN=0,w125=0,w15=0,wM=0,wBeforeBreak=0,wAfterBreak=0,wOrders=0;
 
     week.forEach(({d,dow})=>{
       const key=`${mi}-${d}`;
@@ -638,6 +643,8 @@ function renderMonth(mi) {
       const res = isOff ? null : calcRow(key, dow, noBreak);
       if(res){wN+=res.normalMins;w125+=res.ot125Mins;w15+=res.ot15Mins;wM+=res.money;
               wBeforeBreak+=res.beforeBreak; wAfterBreak+=res.worked;}
+      const orders = parseInt(stored.orders)||0;
+      if(!isOff) wOrders += orders;
       const dc=DAY_DC[dow];
 
       // ปุ่ม toggle สำหรับเสาร์ (หยุด/ทำงาน)
@@ -667,6 +674,9 @@ function renderMonth(mi) {
           ${isOff?'disabled':''} onchange="onFC('${key}','in',this.value,${dow})"></td>
         <td><input class="time-input${stored.out?' filled':''}" type="time" id="out_${key}" value="${stored.out||''}"
           ${isOff?'disabled':''} onchange="onFC('${key}','out',this.value,${dow})"></td>
+        <td><input class="order-input" type="number" id="ord_${key}" value="${stored.orders||''}"
+          min="0" placeholder="0" ${isOff?'disabled':''}
+          onchange="onFC('${key}','orders',this.value,${dow})"></td>
         <td>${breakBtn}</td>
         <td class="computed${res?' has-value':''}" id="bb_${key}">${res?fmtTime(res.beforeBreak):'--'}</td>
         <td class="computed${res?' has-value':''}" id="net_${key}">${res?fmtTime(res.worked):'--'}</td>
@@ -678,7 +688,10 @@ function renderMonth(mi) {
     });
 
     html+=`<tr class="week-summary">
-      <td colspan="5" style="text-align:right;padding-right:8px;font-size:10px;">สัปดาห์ ${wi+1}</td>
+      <td style="text-align:center;font-size:10px;font-weight:700;color:var(--muted);">สัปดาห์ ${wi+1}</td>
+      <td colspan="3"></td>
+      <td class="ws-orders">${wOrders>0?wOrders:''}</td>
+      <td></td>
       <td class="ws-val" title="รวมชม.ก่อนหักพัก">${fmtTime(wBeforeBreak)}</td>
       <td class="ws-val" title="รวมชม.หลังหักพัก">${fmtTime(wAfterBreak)}</td>
       <td class="ws-val">${fmtTime(wN)}</td>
@@ -689,7 +702,7 @@ function renderMonth(mi) {
   });
 
   // month total
-  let mN=0,m125=0,m15=0,mM=0,mD=0,mBefore=0,mAfter=0;
+  let mN=0,m125=0,m15=0,mM=0,mD=0,mBefore=0,mAfter=0,mOrders=0;
   for(let d=1;d<=mo.days;d++){
     const dow=getDOW(mo,d);
     const key=`${mi}-${d}`;
@@ -701,10 +714,14 @@ function renderMonth(mi) {
     const res=calcRow(key,dow,noBreak2);
     if(res){mN+=res.normalMins;m125+=res.ot125Mins;m15+=res.ot15Mins;mM+=res.money;mD++;
             mBefore+=res.beforeBreak; mAfter+=res.worked;}
+    mOrders += parseInt(stored.orders)||0;
   }
 
   html+=`<tfoot><tr class="month-total-row">
-    <td colspan="5" style="text-align:right;padding-right:8px;font-size:10px;font-weight:700;color:var(--muted);">รวมเดือน</td>
+    <td style="text-align:center;font-size:10px;font-weight:700;color:var(--muted);">รวมเดือน</td>
+    <td colspan="3"></td>
+    <td style="font-family:var(--mono);font-size:12px;font-weight:800;color:#a0ffcc;">${mOrders>0?mOrders:''}</td>
+    <td></td>
     <td style="font-family:var(--mono);font-size:12px;font-weight:800;color:#ffe97a;">${fmtTime(mBefore)}</td>
     <td style="font-family:var(--mono);font-size:12px;font-weight:800;color:#ffe97a;">${fmtTime(mAfter)}</td>
     <td style="font-family:var(--mono);font-size:12px;font-weight:800;color:var(--accent);">${fmtTime(mN)}</td>
