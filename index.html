@@ -125,7 +125,7 @@
   .dc-sat .day-abbr,.dc-sat .day-num{color:var(--accent2);}
 
   .time-input{background:var(--surface);border:1px solid var(--border);color:var(--text);
-    border-radius:5px;padding:4px 2px;font-family:var(--mono);font-size:10px;width:62px;text-align:center;outline:none;
+    border-radius:5px;padding:4px 2px;font-family:var(--mono);font-size:10px;width:65px;text-align:center;outline:none;
     -webkit-appearance:none;appearance:none;}
   .time-input:focus{border-color:var(--accent);}
   .time-input.filled{border-color:rgba(79,142,247,.55);}
@@ -657,13 +657,14 @@ function renderMonth(mi) {
       if(!isOff) wOrders += orders;
       const dc=DAY_DC[dow];
 
-      // ปุ่ม toggle สำหรับเสาร์ (หยุด/ทำงาน)
+      // ปุ่ม toggle สำหรับเสาร์ (หยุด/ทำงาน) - แสดงแค่จุดสี
       let toggleBtn = '';
       if(isSat){
         const isWorking = stored.satWorking;
         toggleBtn = `<button class="off-btn ${isWorking?'is-working':'is-off'}"
-          onclick="toggleSat('${key}')" title="${isWorking?'คลิกเพื่อหยุด':'คลิกเพื่อทำงาน'}">
-          ${isWorking?'🟢 ทำงาน':'🔴 หยุด'}</button>`;
+          onclick="toggleSat('${key}')" title="${isWorking?'คลิกเพื่อหยุด':'คลิกเพื่อทำงาน'}"
+          style="font-size:16px;padding:0;border:none;background:none;width:24px;height:24px;">
+          ${isWorking?'🟢':'🔴'}</button>`;
       } else {
         toggleBtn = `<span style="font-size:9px;color:var(--muted);">–</span>`;
       }
