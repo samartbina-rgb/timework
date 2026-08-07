@@ -96,7 +96,16 @@
 
   /* ── TABLE ── */
   .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;width:100%;}
-  .table-wrapper{background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;min-width:620px;}
+  .table-wrapper{background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+  table{border-collapse:collapse;width:max-content;min-width:100%;}
+  /* fix คอลัมน์วันไว้ด้านซ้ายเมื่อ scroll */
+  thead th:first-child, tbody td:first-child, tfoot td:first-child{
+    position:sticky;left:0;z-index:2;background:var(--surface);}
+  tbody td:first-child{background:var(--card);}
+  tr.weekend td:first-child{background:#1a1d2e;}
+  tr.dayoff-row-tr td:first-child{background:#16111a;}
+  tr.week-summary td:first-child{background:#121830;}
+  tr.month-total-row td:first-child{background:#0d1a14;}
   .week-block{border-bottom:2px solid var(--border);}
   .week-block:last-child{border-bottom:none;}
   table{width:100%;border-collapse:collapse;}
